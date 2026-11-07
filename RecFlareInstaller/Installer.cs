@@ -130,13 +130,42 @@ static bool AddDefenderExclusion(string path)
     }
 }
 
-async Task DownloadFromUrl(string url, string path)
-{
-    HttpClient client = new HttpClient();
-    using Stream remotestream = await client.GetStreamAsync(url);
-    using FileStream fileStream = new FileStream(path, System.IO.FileMode.Create);
-    await remotestream.CopyToAsync(fileStream);
-}
+
+
+static async Task DownloadFromUrl(string url, string path)
+    {
+        HttpClient client = new HttpClient();
+        using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+
+        long total = response.Content.Headers.ContentLength ?? -1;
+
+        using var remote = await response.Content.ReadAsStreamAsync();
+        using var file = new FileStream(path, System.IO.FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, FileOptions.Asynchronous);
+
+        byte[] buffer = new byte[1024 * 1024];
+        long done = 0;
+        int read;
+        int lastPercent = -1;
+
+        while ((read = await remote.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        {
+            await file.WriteAsync(buffer, 0, read);
+            done += read;
+
+            if (total > 0)
+            {
+                int percent = (int)(done * 100 / total);
+                if (percent != lastPercent)
+                {
+                    Console.Write($"\rDownloading... {percent}%");
+                    lastPercent = percent;
+                }
+            }
+        }
+
+        Console.WriteLine();
+    }
 
 static string GetSha256Hash(string filePath)
 {

@@ -22,7 +22,7 @@ const string voiceKeyXml =
 
 // Octokit stuff
 
-var githubClient = new GitHubClient(new ProductHeaderValue("RecFlareLauncher"));
+var githubClient = new GitHubClient(new ProductHeaderValue("RecFlareInstaller"));
 
 Release latest = await githubClient.Repository.Release.GetLatest("recflare", "patch-2026");
 foreach (var release in latest.Assets)
